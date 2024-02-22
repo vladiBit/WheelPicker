@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.Typeface;
 import android.os.Build;
@@ -20,7 +21,6 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.Scroller;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -75,7 +75,7 @@ public class WheelPicker extends View implements IDebug, IWheelPicker, Runnable 
 
     private Rect mRectDrawn;
     private Rect mRectIndicatorHead, mRectIndicatorFoot;
-    private Rect mRectCurrentItem;
+    private RectF mRectCurrentItem;
 
     private Camera mCamera;
     private Matrix mMatrixRotate, mMatrixDepth;
@@ -357,7 +357,7 @@ public class WheelPicker extends View implements IDebug, IWheelPicker, Runnable 
         mRectIndicatorHead = new Rect();
         mRectIndicatorFoot = new Rect();
 
-        mRectCurrentItem = new Rect();
+        mRectCurrentItem = new RectF();
 
         mCamera = new Camera();
 
@@ -532,8 +532,8 @@ public class WheelPicker extends View implements IDebug, IWheelPicker, Runnable 
 
     private void computeCurrentItemRect() {
         if (!hasCurtain && mSelectedItemTextColor == -1) return;
-        mRectCurrentItem.set(mRectDrawn.left, mWheelCenterY - mHalfItemHeight, mRectDrawn.right,
-                mWheelCenterY + mHalfItemHeight);
+        mRectCurrentItem.set(mRectDrawn.left, Math.round(mWheelCenterY - mHalfItemHeight*1.3f), mRectDrawn.right,
+                Math.round(mWheelCenterY + mHalfItemHeight*1.3f));
     }
 
     @Override
@@ -659,7 +659,14 @@ public class WheelPicker extends View implements IDebug, IWheelPicker, Runnable 
         if (hasCurtain) {
             mPaint.setColor(mCurtainColor);
             mPaint.setStyle(Paint.Style.FILL);
-            canvas.drawRect(mRectCurrentItem, mPaint);
+            //canvas.drawRect(mRectCurrentItem, mPaint);
+            float round = 30f;
+            try {
+                round = Math.max(mRectCurrentItem.height() * 0.3f, 30);
+            } catch (Exception x) {
+                //Prevent crash
+            }
+            canvas.drawRoundRect(mRectCurrentItem, round, round, mPaint);
         }
         // 是否需要绘制指示器
         // Need to draw indicator or not
@@ -856,29 +863,29 @@ public class WheelPicker extends View implements IDebug, IWheelPicker, Runnable 
     }
 
     public void setSelectedItemPosition(int position, final boolean animated) {
-      isTouchTriggered = false;
-      if (animated && mScroller.isFinished()) { // We go non-animated regardless of "animated" parameter if scroller is in motion
-        int length = getData().size();
-        int itemDifference = position - mCurrentItemPosition;
-        if (itemDifference == 0)
-          return;
-        if (isCyclic && Math.abs(itemDifference) > (length / 2)) { // Find the shortest path if it's cyclic
-          itemDifference += (itemDifference > 0) ? -length : length;
+        isTouchTriggered = false;
+        if (animated && mScroller.isFinished()) { // We go non-animated regardless of "animated" parameter if scroller is in motion
+            int length = getData().size();
+            int itemDifference = position - mCurrentItemPosition;
+            if (itemDifference == 0)
+                return;
+            if (isCyclic && Math.abs(itemDifference) > (length / 2)) { // Find the shortest path if it's cyclic
+                itemDifference += (itemDifference > 0) ? -length : length;
+            }
+            mScroller.startScroll(0, mScroller.getCurrY(), 0, (-itemDifference) * mItemHeight);
+            mHandler.post(this);
+        } else {
+            if (!mScroller.isFinished())
+                mScroller.abortAnimation();
+            position = Math.min(position, mData.size() - 1);
+            position = Math.max(position, 0);
+            mSelectedItemPosition = position;
+            mCurrentItemPosition = position;
+            mScrollOffsetY = 0;
+            computeFlingLimitY();
+            requestLayout();
+            invalidate();
         }
-        mScroller.startScroll(0, mScroller.getCurrY(), 0, (-itemDifference) * mItemHeight);
-        mHandler.post(this);
-      } else {
-        if (!mScroller.isFinished())
-          mScroller.abortAnimation();
-        position = Math.min(position, mData.size() - 1);
-        position = Math.max(position, 0);
-        mSelectedItemPosition = position;
-        mCurrentItemPosition = position;
-        mScrollOffsetY = 0;
-        computeFlingLimitY();
-        requestLayout();
-        invalidate();
-      }
     }
 
     @Override
