@@ -739,16 +739,22 @@ public class WheelPicker extends View implements IDebug, IWheelPicker, Runnable 
                 if (null != getParent())
                     getParent().requestDisallowInterceptTouchEvent(false);
                 if (isClick && !isForceFinishScroll) {
-                    int topOfCurrentItemY = mWheelCenterY - mHalfItemHeight;
-                    float offsetPx = event.getY() - topOfCurrentItemY;
-                    int offset = (int) Math.floor(offsetPx / mItemHeight);
-                    if (isDebug) {
-                        Log.i(TAG, "Got click with dY (" + offsetPx + ") offset " + offset + ", adding to " + mCurrentItemPosition);
-                    }
-                    if (offset != 0) {
-                        final int newPosition = mCurrentItemPosition + offset;
-                        setSelectedItemPosition(newPosition, true);
-                        mOnItemSelectedListener.onItemSelected(this, mData.get(newPosition), newPosition);
+                    try {
+                        int topOfCurrentItemY = mWheelCenterY - mHalfItemHeight;
+                        float offsetPx = event.getY() - topOfCurrentItemY;
+                        int offset = (int) Math.floor(offsetPx / mItemHeight);
+                        if (isDebug) {
+                            Log.i(TAG, "Got click with dY (" + offsetPx + ") offset " + offset + ", adding to " + mCurrentItemPosition);
+                        }
+                        if (offset != 0) {
+                            final int newPosition = mCurrentItemPosition + offset;
+                            if (newPosition > -1 && newPosition < mData.size()) {
+                                setSelectedItemPosition(newPosition, true);
+                                mOnItemSelectedListener.onItemSelected(this, mData.get(newPosition), newPosition);
+                            }
+                        }
+                    } catch (Exception x) {
+                        //Prevent crash
                     }
                     break;
                 }
