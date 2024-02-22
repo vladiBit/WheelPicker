@@ -746,7 +746,9 @@ public class WheelPicker extends View implements IDebug, IWheelPicker, Runnable 
                         Log.i(TAG, "Got click with dY (" + offsetPx + ") offset " + offset + ", adding to " + mCurrentItemPosition);
                     }
                     if (offset != 0) {
-                        setSelectedItemPosition(mCurrentItemPosition + offset, true);
+                        final int newPosition = mCurrentItemPosition + offset;
+                        setSelectedItemPosition(newPosition, true);
+                        mOnItemSelectedListener.onItemSelected(this, mData.get(newPosition), newPosition);
                     }
                     break;
                 }
